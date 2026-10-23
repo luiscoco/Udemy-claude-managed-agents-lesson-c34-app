@@ -42,27 +42,79 @@ CLAUDE_MANAGED_ENVIRONMENT_ID=your_environment_id
 PORT=3034
 ```
 
-## How the application was developed
+## How the app was build
 
-The browser collects inputs; the Node host validates requests; the lesson implementation produces observable evidence. The architecture page walks through the real source with numbered steps, prerequisite configuration, source filenames and code excerpts.
+### 1. Compare only a matching configuration scope
 
-### Lesson implementation
+The counters are rejected when the supplied model, agent, system or tool scope is different. A cache comparison needs a consistent configuration boundary.
 
-[src/lesson.ts](https://github.com/luiscoco/Udemy-claude-managed-agents-lesson-c34-app/blob/main/src/lesson.ts)
+Source: [src/lesson.ts](src/lesson.ts#L13)
 
 ```typescript
-  async run(input) {
-
-if(!flag(input,"sameScope"))return report("rejected","Model, agent, system, or tool scope differs",{},["Compare trusted resolved configuration before counters"]);
-const a=number(input,"beforeRead"),b=number(input,"afterRead");
-if(a<0||b<0)return report("incomplete","A request did not provide a valid cache reading",{readChange:null},["Retain missing observations as unknown"]);
-return report("passed","Compared per-request cache-read counters",{beforeRead:a,afterRead:b,readChange:b-a,claims:{tokensSaved:"not established",latencyGain:"not measured",invoiceSavings:"not established"}},["Read request-end usage fields","Do not add cumulative session snapshots","A negative request-to-request change can be valid"]);
-
-  }
-};
+if (!flag(input, "sameScope"))
+  return report("rejected", "Model, agent, system, or tool scope differs", {}, [
+    "Compare trusted resolved configuration before counters",
+  ]);
 ```
 
-Read the architecture page for the remaining source excerpts and explanations, including input handling and optional provider behavior. The diagram describes this application, rather than implying that an external integration has been implemented.
+### 2. Handle missing readings and signed differences
+
+Missing readings produce incomplete coverage. Otherwise the sample subtracts per-request cache-read counters; a decrease is valid and does not by itself prove latency gains, token savings or a lower invoice.
+
+Source: [src/lesson.ts](src/lesson.ts#L14) · selected statements
+
+```typescript
+const a = number(input, "beforeRead"),
+  b = number(input, "afterRead");
+
+if (a < 0 || b < 0)
+  return report(
+    "incomplete",
+    "A request did not provide a valid cache reading",
+    { readChange: null },
+    ["Retain missing observations as unknown"],
+  );
+
+return report(
+  "passed",
+  "Compared per-request cache-read counters",
+  {
+    beforeRead: a,
+    afterRead: b,
+    readChange: b - a,
+    claims: {
+      tokensSaved: "not established",
+      latencyGain: "not measured",
+      invoiceSavings: "not established",
+    },
+  },
+  [
+    "Read request-end usage fields",
+    "Do not add cumulative session snapshots",
+    "A negative request-to-request change can be valid",
+  ],
+);
+```
+
+### Check your understanding
+
+Run **Compare matching request scope** in the application. Compare the result with these scenario expectations:
+
+```json
+{
+  "input": {
+    "beforeRead": 100,
+    "afterRead": 140,
+    "sameScope": true
+  },
+  "expectedOutcome": "passed",
+  "checkEvidence": {
+    "readChange": 40
+  }
+}
+```
+
+Then try **Reject a different scope**. Its expected outcome is `rejected`; identify the condition or evidence field that explains the difference.
 
 ## Validation
 
