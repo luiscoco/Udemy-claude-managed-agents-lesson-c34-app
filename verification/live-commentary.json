@@ -1,0 +1,29 @@
+{
+  "source": "live-provider-commentary",
+  "sessionId": "sesn_01Pr9MhhsZQkWR6F27oU4D85",
+  "answer": "This local experiment compared per-request cache-read counters before and after a prompt caching event, observing a change of 40 units (100 \u2192 140). It emphasizes reading only request-level usage fields rather than accumulating session-wide snapshots, and notes that a negative request-to-request change can be valid. Importantly, the experiment does not establish claims about tokens saved, latency gains, or cost savings.",
+  "stopReason": "end_turn",
+  "eventTypes": [
+    "session.status_running",
+    "session.thread_status_running",
+    "user.message",
+    "span.model_request_start",
+    "agent.thinking",
+    "agent.message",
+    "span.model_request_end",
+    "session.thread_status_idle",
+    "session.usage",
+    "session.status_idle"
+  ],
+  "requestUsage": [
+    {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 613,
+      "output_tokens": 127,
+      "speed": "standard"
+    }
+  ],
+  "experimentHash": "94619cc8fddedd2ed38ecd274b2b076d5ffafe3d6c1e50b88dd4dd7ba0546c63",
+  "scope": "A real text-only model response about the local experiment. External integrations and the experiment's correctness are not certified by this response."
+}

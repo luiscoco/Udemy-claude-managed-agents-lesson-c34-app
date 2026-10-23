@@ -1,0 +1,22 @@
+export type CacheScope={sessionId:string;modelId:string;agentVersion:number;toolsDigest:string;systemDigest:string};
+export type CacheReading=CacheScope & {eventId:string|null;read:number|null;created:number|null;input:number|null};
+const record=(value:unknown):value is Record<string,unknown>=>typeof value==="object" && value!==null && !Array.isArray(value);
+const count=(value:unknown)=>typeof value==="number" && Number.isSafeInteger(value) && value>=0 ? value : null;
+export function readCache(scope:CacheScope,event:unknown):CacheReading {
+  const span=record(event) && event.type==="span.model_request_end" ? event : null;
+  const usage=span && record(span.model_usage) ? span.model_usage : null;
+  return {...scope,eventId:typeof span?.id==="string"?span.id:null,
+    read:count(usage?.cache_read_input_tokens),created:count(usage?.cache_creation_input_tokens),input:count(usage?.input_tokens)};
+}
+export function compareRequests(a:CacheReading,b:CacheReading) {
+  const same=a.sessionId===b.sessionId && a.modelId===b.modelId && a.agentVersion===b.agentVersion &&
+    a.toolsDigest===b.toolsDigest && a.systemDigest===b.systemDigest;
+  if (!same || !a.eventId || !b.eventId || a.eventId===b.eventId) return {comparable:false as const,readChange:null};
+  return {comparable:true as const,readChange:a.read===null || b.read===null ? null : b.read-a.read};
+}
+// Scope comes from trusted resolved configuration. Request-end spans do NOT supply a model ID.
+// This comparison is a per-request change, not a cumulative delta or "tokens saved" calculation.
+// Negative changes can be valid between requests. Missing/invalid values stay null, never zero.
+// A stricter shared-scope comparison is an experiment policy, not a universal claim about cross-session cache reuse.
+// Cache reads alone do not prove hit rate, latency gains, monetary savings or current window occupancy.
+// Managed harness owns request construction; this helper does not set cache_control or cache TTL.
